@@ -1,5 +1,5 @@
 ﻿@page "/weather"
-@attribute [StreamRendering]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <PageTitle>Weather</PageTitle>
 
@@ -13,31 +13,18 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <QuickGrid Items=@forecasts>
+        <PropertyColumn Title="Date" Property="f => f.Date" Sortable=true IsDefaultSortColumn=true />
+        <PropertyColumn Title="°C" Property="f => f.TemperatureC" Sortable=true />
+        <PropertyColumn Title="°F" Property="f => f.TemperatureF" Sortable=true />
+        <TemplateColumn Title="Summary" SortBy=@(GridSort<(WeatherForecast, bool)>.ByAscending(f => f.Item1.Summary))>
+            <b>@context.Item1.Summary</b>
+        </TemplateColumn>
+    </QuickGrid>
 }
 
 @code {
-    private WeatherForecast[]? forecasts;
+    private IQueryable<WeatherForecast>? forecasts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,7 +38,7 @@ else
             Date = startDate.AddDays(index),
             TemperatureC = Random.Shared.Next(-20, 55),
             Summary = summaries[Random.Shared.Next(summaries.Length)]
-        }).ToArray();
+        }).ToArray().AsQueryable();
     }
 
     private class WeatherForecast
